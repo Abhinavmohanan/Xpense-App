@@ -1,10 +1,12 @@
-# xpense
+# Xpense App - The one expense tracker you will ever need
 
-A new Flutter project.
+Simple expense tracker made using Flutter
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+* Weekly expense tracker
+* Local Database using Hive
+
 
 A few resources to get you started if this is your first Flutter project:
 
