@@ -2,7 +2,7 @@
 
 Simple expense tracker made using Flutter
 
-## Getting Started
+## Features
 
 * Weekly expense tracker
 * Local Database using Hive
