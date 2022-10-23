@@ -1,16 +1,44 @@
-import 'package:flutter/material.dart';
-import './widgets/entrycard.dart';
-import './models/entry.dart';
-import './widgets/InputForm.dart';
+import 'dart:ffi';
 
-void main() => runApp(MyApp());
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import './widgets/entrycard.dart';
+import './widgets/InputForm.dart';
+import './widgets/chart.dart';
+
+import './models/entry.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+Future<void> main() async {
+  Hive.registerAdapter(EntryAdapter());
+  await Hive.initFlutter();
+  await Hive.openBox("Entry");
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter App',
+      title: 'Xpense',
+      theme: ThemeData(
+        primarySwatch: Colors.cyan,
+        fontFamily: 'QuickSand',
+        textTheme: ThemeData.light().textTheme.copyWith(
+            titleMedium: const TextStyle(
+                fontFamily: 'OpenSans',
+                fontSize: 15,
+                fontWeight: FontWeight.bold)),
+        appBarTheme: const AppBarTheme(
+            titleTextStyle: TextStyle(
+                color: Color.fromARGB(255, 2, 61, 70),
+                fontFamily: 'OpenSans',
+                fontSize: 20,
+                fontWeight: FontWeight.bold),
+            systemOverlayStyle:
+                SystemUiOverlayStyle(statusBarColor: Colors.cyan)),
+      ),
       home:
           MyHomePage(), //when external data supplied to widget , build is called automatically
     );
@@ -23,43 +51,64 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<Entry> entries = [
-    Entry(
-        id: "1",
-        title: "First Entry is the largest entry ever",
-        amount: 1000,
-        date: DateTime.now()),
-    Entry(id: "2", title: "Second Entry", amount: 500, date: DateTime.now()),
-    Entry(id: '3', title: "Thrid Entry", amount: 500, date: DateTime.now()),
-  ];
+  var box = Hive.box('Entry');
 
-  void _addEntry(String enTitle, double enAmount) {
+  List<Entry> getBoxEntry() {
+    List<Entry> entries = (box.values.toList() as List<dynamic>)
+        .map((dynamic item) => item as Entry)
+        .toList();
+    return entries;
+  }
+
+  void _addEntry(String enTitle, double enAmount, DateTime selectedDate) async {
     final newEntry = Entry(
         id: DateTime.now().toString(),
         title: enTitle,
         amount: enAmount,
-        date: DateTime.now());
+        date: selectedDate);
 
     setState(() {
-      entries.add(newEntry);
+      box.add(newEntry);
+    });
+  }
+
+  void _deleteEntry(int index) {
+    setState(() {
+      box.deleteAt(index);
     });
   }
 
   void addEntryModalSheet(BuildContext ctx) {
     showModalBottomSheet(
+        shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         context: ctx,
         builder: (_) {
-          return InputForm(
-            addEntry: _addEntry,
+          return SizedBox(
+            height: MediaQuery.of(context).viewInsets.bottom + 300,
+            child: InputForm(
+              addEntry: _addEntry,
+            ),
           );
         });
+  }
+
+  List<Entry> get recentEntries {
+    //to get entries of last 7 days
+    List<Entry> entries = getBoxEntry();
+    return entries
+        .where((item) =>
+            item.date.isAfter(DateTime.now().subtract(const Duration(days: 7))))
+        .toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Xpense'),
+        backgroundColor: Color.fromARGB(255, 191, 221, 224),
+        elevation: 0,
+        title: const Text('Xpense'),
         actions: [
           IconButton(
               onPressed: () {
@@ -68,23 +117,26 @@ class _MyHomePageState extends State<MyHomePage> {
               icon: const Icon(Icons.add))
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            height: 150,
-            child: Card(
-              // Card occupy space of child , unless there is parent with well defined size
-              // ignore: sort_child_properties_last
-              child: Container(
-                alignment: Alignment.center,
-                child: const Text("Chart"),
+      body: Container(
+        color: Color.fromARGB(255, 191, 221, 224),
+        child: Column(
+          children: [
+            Chart(recentEntries),
+            Container(
+              padding: EdgeInsets.all(20),
+              child: const Text(
+                "Expense List",
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color.fromARGB(255, 2, 61, 70)),
               ),
-              elevation: 5,
             ),
-          ),
-          EntryCard(entries: List.from(entries.reversed)),
-        ],
+            EntryCard(
+                entries: getBoxEntry().reversed.toList(),
+                deleteEntry: _deleteEntry),
+          ],
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
