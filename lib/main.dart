@@ -1,5 +1,4 @@
-import 'dart:ffi';
-
+import 'package:splash_screen_view/SplashScreenView.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import './widgets/entrycard.dart';
@@ -38,9 +37,37 @@ class MyApp extends StatelessWidget {
                 fontWeight: FontWeight.bold),
             systemOverlayStyle:
                 SystemUiOverlayStyle(statusBarColor: Colors.cyan)),
+        scrollbarTheme: ScrollbarThemeData(
+            thumbColor:
+                MaterialStateProperty.all(Theme.of(context).primaryColor)),
       ),
       home:
-          MyHomePage(), //when external data supplied to widget , build is called automatically
+          SplashScreen(), //when external data supplied to widget , build is called automatically
+    );
+  }
+}
+
+class SplashScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SplashScreenView(
+      navigateRoute: MyHomePage(),
+      duration: 5000,
+      imageSize: 70,
+      imageSrc: "assets/images/icon.png",
+      text: "Xpense",
+      textType: TextType.ColorizeAnimationText,
+      textStyle: const TextStyle(
+        fontSize: 30.0,
+      ),
+      colors: const [
+        Colors.cyan,
+        Colors.blue,
+        Colors.purple,
+        Colors.yellow,
+        Colors.red,
+      ],
+      backgroundColor: Colors.white,
     );
   }
 }
@@ -72,6 +99,12 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _editEntry(int index, Entry value) {
+    setState(() {
+      box.putAt(index, value);
+    });
+  }
+
   void _deleteEntry(int index) {
     setState(() {
       box.deleteAt(index);
@@ -85,7 +118,6 @@ class _MyHomePageState extends State<MyHomePage> {
         context: ctx,
         builder: (_) {
           return SizedBox(
-            height: MediaQuery.of(context).viewInsets.bottom + 300,
             child: InputForm(
               addEntry: _addEntry,
             ),
@@ -134,7 +166,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             EntryCard(
                 entries: getBoxEntry().reversed.toList(),
-                deleteEntry: _deleteEntry),
+                deleteEntry: _deleteEntry,
+                editEntry: _editEntry)
           ],
         ),
       ),
